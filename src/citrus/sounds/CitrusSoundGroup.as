@@ -20,6 +20,8 @@ package citrus.sounds
 		
 		protected var _sounds:Vector.<CitrusSound>;
 		
+		public var polyphonic:Boolean = true;
+		
 		public function CitrusSoundGroup() 
 		{
 			_sounds = new Vector.<CitrusSound>();
@@ -134,6 +136,15 @@ package citrus.sounds
 		public function get volume():Number
 		{
 			return _volume;
+		}
+		
+		public function get isPlaying():Boolean
+		{
+			for each(var s:CitrusSound in _sounds)
+				if(s.isPlaying)
+					return true;
+					
+			return false;
 		}
 		
 		public function get groupID():String

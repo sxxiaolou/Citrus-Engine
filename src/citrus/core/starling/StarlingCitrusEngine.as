@@ -2,7 +2,6 @@ package citrus.core.starling {
 
 	import citrus.core.CitrusEngine;
 	import citrus.core.State;
-	import citrus.utils.Mobile;
 
 	import starling.core.Starling;
 	import starling.events.Event;
@@ -39,7 +38,6 @@ package citrus.core.starling {
 		 * reset this array to a single entry to force one specific profile. <a href="http://wiki.starling-framework.org/manual/constrained_stage3d_profile">More informations</a>.
 		 */
 		protected var _context3DProfiles:Array = ["baselineExtended", "baseline", "baselineConstrained"];
-		protected var _context3DProfileTestDelay:int = 100;
 		
 		public function StarlingCitrusEngine() {
 			super();
@@ -87,8 +85,7 @@ package citrus.core.starling {
 		 */
 		public function setUpStarling(debugMode:Boolean = false, antiAliasing:uint = 1, viewPort:Rectangle = null, stage3D:Stage3D = null):void {
 
-			if (Mobile.isAndroid())
-				Starling.handleLostContext = true;
+			Starling.handleLostContext = true;
 				
 			if (viewPort)
 				_viewport = viewPort;
@@ -103,6 +100,7 @@ package citrus.core.starling {
 		protected function handleStarlingStageResize(evt:starling.events.Event):void {
 			
 			resetScreenSize();
+			onStageResize.dispatch(_screenWidth, _screenHeight);
 		}
 		
 		/**
@@ -116,7 +114,7 @@ package citrus.core.starling {
 		{
 			var arr:Array = assetSizes;
 			arr.sort(Array.NUMERIC);
-			var scaleF:Number = Math.floor(starling.contentScaleFactor * 10) / 10;
+			var scaleF:Number = Math.floor(starling.contentScaleFactor * 1000) / 1000;
 			var closest:Number;
 			var f:Number;
 			for each (f in arr)
@@ -236,12 +234,17 @@ package citrus.core.starling {
 			if (!_starling.isStarted)
 				_starling.start();
 				
-			_starling.addEventListener(starling.events.Event.ROOT_CREATED, function():void
-			{
-				_starling.removeEventListener(starling.events.Event.ROOT_CREATED, arguments.callee);
-				handleStarlingReady();
-				setupStats();
-			});
+			_starling.addEventListener(starling.events.Event.ROOT_CREATED, _starlingRootCreated);
+		}
+		
+		protected function _starlingRootCreated(evt:starling.events.Event):void {
+			
+			_starling.removeEventListener(starling.events.Event.ROOT_CREATED, _starlingRootCreated);
+				
+			stage.removeEventListener(flash.events.Event.RESIZE, handleStageResize);
+			
+			handleStarlingReady();
+			setupStats();
 		}
 		
 		/**
@@ -313,6 +316,8 @@ package citrus.core.starling {
 		
 		/**
 		 * @inheritDoc
+		 * We stop Starling. Be careful, if you use AdMob you will need to override this function and set Starling stop to <code>true</code>!
+		 * If you encounter issues with AdMob, you may override <code>handleStageDeactivated</code> and <code>handleStageActivated</code> and use <code>NativeApplication.nativeApplication</code> instead.
 		 */
 		override protected function handleStageDeactivated(e:flash.events.Event):void {
 
@@ -324,6 +329,7 @@ package citrus.core.starling {
 		
 		/**
 		 * @inheritDoc
+		 * We start Starling.
 		 */
 		override protected function handleStageActivated(e:flash.events.Event):void {
 
@@ -338,9 +344,23 @@ package citrus.core.starling {
 			return _baseWidth;
 		}
 		
+		public function set baseWidth(value:int):void {
+			
+			_baseWidth = value;
+			
+			resetViewport();
+		}
+		
 		public function get baseHeight():int
 		{
 			return _baseHeight;
+		}
+		
+		public function set baseHeight(value:int):void {
+			
+			_baseHeight = value;
+			
+			resetViewport();
 		}
 		
 		public function get juggler():CitrusStarlingJuggler
